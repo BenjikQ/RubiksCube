@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  - push
+
+env:
+  CONAN_SYSREQUIRES_MODE: enabled
+  CONAN_USER_HOME: "${{ github.workspace }}/conan-cache"
+  CONAN_V2_MODE: 1
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+          - windows-2022
+        compiler:
+          - llvm-14
+          - llvm-12
+          - gcc-12
+          - gcc-11
+        generator:
+          - Ninja
+          - "Ninja Multi-Config"
+        build_type:
+          - Release
+          - Debug
+
+        exclude:
+          - os: windows-2022
+            compiler: llvm-12
+
+        include:
+          - os: windows-2022
+            compiler: msvc
+            generator: "Visual Studio 17 2022"
+            build_type: Release
+
+          - os: windows-2022
+            compiler: msvc
+            generator: "Visual Studio 17 2022"
+            build_type: Debug
+
+          - os: windows-2022
+            compiler: msvc
+            generator: "Ninja Multi-Config"
+            build_type: Release
+
+          - os: windows-2022
+            compiler: msvc
+            generator: "Ninja Multi-Config"
+            build_type: Debug
+
+          - os: windows-2022
+            compiler: msvc
+            generator: Ninja
+            build_type: Release
+
+          - os: windows-2022
+            compiler: msvc
+            generator: Ninja
+            build_type: Debug
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ env.CONAN_USER_HOME }}
+             ~/.cache/pip
+          key: ${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ hashFiles('./conanfile.txt') }}-${{ matrix.generator }}-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: ${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ hashFiles('./conanfile.txt') }}
+      - name: Setup Cpp
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+          cmake: true
+          ninja: true
+          conan: true
+      - name: Setup Conan
+        run: |
+          conan profile new default --detect
+          conan profile update conf.tools.system.package_manager:mode=install default
+          conan profile update conf.tools.system.package_manager:sudo=True default
+          conan config set general.cmake_generator=Ninja
+      - name: Set libstdc++11
+        if: ${{ startsWith(matrix.compiler, 'llvm') }}
+        run: |
+          conan profile update settings.compiler.libcxx=libstdc++11 default
+      - name: Install dependencies
+        run: |
+          mkdir build
+          cd build
+          conan install .. -s build_type=${{ matrix.build_type }} -pr:b default -pr:h default --build missing
+      - name: Configure CMake
+        run: |
+          cmake -S . -B ./build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE:STRING=${{ matrix.build_type }}
+      - name: Build
+        run: |
+          cmake --build ./build --config ${{ matrix.build_type }}

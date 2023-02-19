@@ -1,7 +1,7 @@
 #include <array>
 
-#include <glbinding/glbinding.h>
 #include <glbinding/gl/gl.h>
+#include <glbinding/glbinding.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -28,11 +28,13 @@ int main() {
     glfwMakeContextCurrent(window);
     glbinding::initialize(glfwGetProcAddress);
 
-    std::array vertices {
+    // clang-format off
+    std::array vertices{
         -0.5f, -0.5f, 0.0f,
          0.5f, -0.5f, 0.0f,
          0.0f,  0.5f, 0.0f,
     };
+    // clang-format on
 
     GLuint vertex_array;
     glGenVertexArrays(1, &vertex_array);
@@ -41,7 +43,8 @@ int main() {
     GLuint vertex_buffer;
     glGenBuffers(1, &vertex_buffer);
     glBindBuffer(GLenum::GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GLenum::GL_ARRAY_BUFFER, std::size(vertices) * sizeof(float), std::data(vertices), GLenum::GL_STATIC_DRAW);
+    glBufferData(GLenum::GL_ARRAY_BUFFER, std::size(vertices) * sizeof(float), std::data(vertices),
+                 GLenum::GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GLenum::GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);

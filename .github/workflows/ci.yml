@@ -102,3 +102,22 @@ jobs:
       - name: Build
         run: |
           cmake --build ./build --config ${{ matrix.build_type }}
+
+  format:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+          - windows-2022
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Cpp
+        uses: aminya/setup-cpp@v1
+        with:
+          clangformat: 15
+      - name: Format code
+        run: |
+          cmake -P cmake/clang-format.cmake
+          git diff --exit-code

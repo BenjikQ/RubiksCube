@@ -81,9 +81,13 @@ jobs:
           cmake: true
           ninja: true
           conan: true
+          clangtidy: true
+      - name: Cleanup Conan system packages
+        run: |
+          conan remove -f '*/system'
       - name: Setup Conan
         run: |
-          conan profile new default --detect
+          conan profile new default --detect --force
           conan profile update conf.tools.system.package_manager:mode=install default
           conan profile update conf.tools.system.package_manager:sudo=True default
           conan config set general.cmake_generator=Ninja
@@ -98,10 +102,15 @@ jobs:
           conan install .. -s build_type=${{ matrix.build_type }} -pr:b default -pr:h default --build missing
       - name: Configure CMake
         run: |
-          cmake -S . -B ./build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE:STRING=${{ matrix.build_type }}
+          cmake -S . -B ./build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE:STRING=${{ matrix.build_type }} -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_CONFIGURATION_TYPES:LIST=${{ matrix.build_type }}
       - name: Build
         run: |
           cmake --build ./build --config ${{ matrix.build_type }}
+      - name: Analyze code
+        if: ${{ startsWith(matrix.generator, 'Ninja') }}
+        shell: bash
+        run: |
+          cmake -P cmake/clang-tidy.cmake | (! grep -q 'error')
 
   format:
     runs-on: ${{ matrix.os }}

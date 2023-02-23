@@ -3,7 +3,7 @@ find_package(glbinding REQUIRED)
 find_package(spdlog REQUIRED)
 
 add_executable(rubikscube main.cpp)
-target_compile_features(rubikscube PRIVATE cxx_std_23)
+target_compile_features(rubikscube PRIVATE cxx_std_20)
 target_link_libraries(rubikscube
   PRIVATE
     glfw

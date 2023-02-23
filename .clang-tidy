@@ -1,0 +1,23 @@
+---
+Checks: '
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  hicpp-*,
+  -hicpp-uppercase-literal-suffix,
+  misc-*,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  performance-*,
+  portability-*,
+  readability-*,
+  -readability-magic-numbers,
+  -readability-uppercase-literal-suffix,
+  -readability-implicit-bool-conversion
+'
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle: none

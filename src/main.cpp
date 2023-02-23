@@ -36,11 +36,11 @@ int main() {
     };
     // clang-format on
 
-    GLuint vertex_array;
+    GLuint vertex_array{};
     glGenVertexArrays(1, &vertex_array);
     glBindVertexArray(vertex_array);
 
-    GLuint vertex_buffer;
+    GLuint vertex_buffer{};
     glGenBuffers(1, &vertex_buffer);
     glBindBuffer(GLenum::GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GLenum::GL_ARRAY_BUFFER, std::size(vertices) * sizeof(float), std::data(vertices),

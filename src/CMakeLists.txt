@@ -1,6 +1,7 @@
 find_package(glfw3 REQUIRED)
 find_package(glbinding REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(tl-expected REQUIRED)
 
 add_executable(rubikscube main.cpp)
 target_compile_features(rubikscube PRIVATE cxx_std_20)
@@ -9,4 +10,5 @@ target_link_libraries(rubikscube
     glfw
     opengl::opengl
     glbinding::glbinding
-    spdlog::spdlog)
+    spdlog::spdlog
+    tl::expected)

@@ -12,3 +12,9 @@ target_link_libraries(rubikscube
     glbinding::glbinding
     spdlog::spdlog
     tl::expected)
+
+add_custom_command(
+  TARGET rubikscube POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+  ${CMAKE_SOURCE_DIR}/assets/shaders $<TARGET_FILE_DIR:rubikscube>/assets/shaders)
+

@@ -1,4 +1,6 @@
 #include <array>
+#include <fstream>
+#include <iterator>
 #include <string>
 #include <string_view>
 
@@ -13,25 +15,17 @@
 #include <tl/expected.hpp>
 
 using namespace gl;
+using namespace std::string_literals;
 using namespace std::string_view_literals;
 
-static constexpr auto vertex_shader_source = R"glsl(
-#version 330 core
-layout (location = 0) in vec3 pos;
-
-void main() {
-    gl_Position = vec4(pos, 1.0);
+[[nodiscard]] tl::expected<std::string, std::string> load_from_file(std::string_view path) {
+    std::ifstream file{ path.data() };
+    if (!file.is_open()) {
+        return tl::unexpected{ "Couldn't open a file"s };
+    }
+    std::string data{ std::istreambuf_iterator<char>{ file }, std::istreambuf_iterator<char>{} };
+    return data;
 }
-)glsl"sv;
-
-static constexpr auto fragment_shader_source = R"glsl(
-#version 330 core
-out vec4 color;
-
-void main() {
-    color = vec4(0.3, 0.5, 0.2, 1.0);
-}
-)glsl"sv;
 
 [[nodiscard]] tl::expected<GLuint, std::string> create_shader(GLenum shader_type, std::string_view source) {
     const GLuint shader{ glCreateShader(shader_type) };
@@ -73,6 +67,12 @@ template<typename... Shaders>
     return shader_program;
 }
 
+void handle_input(GLFWwindow* window) {
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+}
+
 int main() {
     spdlog::info("Running application");
 
@@ -95,24 +95,24 @@ int main() {
     }
 
     glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(
+        window, [](GLFWwindow*, int width, int height) { // NOLINT(bugprone-easily-swappable-parameters)
+            glViewport(0, 0, width, height);
+        });
     glbinding::initialize(glfwGetProcAddress);
 
-    const auto vertex_shader = create_shader(GL_VERTEX_SHADER, vertex_shader_source);
-    if (!vertex_shader) {
-        spdlog::error("Vertex shader compilation error: {}", vertex_shader.error());
-        return -1;
-    }
+    const auto vertex_shader = load_from_file("assets/shaders/shader.vert")
+                                   .and_then([](auto&& source) { return create_shader(GL_VERTEX_SHADER, source); })
+                                   .or_else([](auto&& error) { spdlog::error("Vertex shader error: {}", error); });
 
-    const auto fragment_shader = create_shader(GL_FRAGMENT_SHADER, fragment_shader_source);
-    if (!fragment_shader) {
-        spdlog::error("Fragment shader compilation error: {}", fragment_shader.error());
-        return -1;
-    }
+    const auto fragment_shader = load_from_file("assets/shaders/shader.frag")
+                                     .and_then([](auto&& source) { return create_shader(GL_FRAGMENT_SHADER, source); })
+                                     .or_else([](auto&& error) { spdlog::error("Fragment shader error: {}", error); });
 
-    const auto shader_program = create_shader_program(vertex_shader.value(), fragment_shader.value());
-    if (!shader_program) {
-        spdlog::error("Shader linking error: {}", shader_program.error());
-    }
+    const auto shader_program =
+        create_shader_program(vertex_shader.value(), fragment_shader.value()).or_else([](auto&& error) {
+            spdlog::error("Shader linking error: {}", error);
+        });
 
     glDeleteShader(vertex_shader.value());
     glDeleteShader(fragment_shader.value());
@@ -145,6 +145,8 @@ int main() {
     glEnableVertexAttribArray(0);
 
     while (!glfwWindowShouldClose(window)) {
+        handle_input(window);
+
         glClearColor(0.3f, 0.2f, 0.5f, 1.0f);
         glClear(gl::GL_COLOR_BUFFER_BIT);
 
@@ -155,4 +157,6 @@ int main() {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    spdlog::info("Application closed");
 }
